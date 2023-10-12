@@ -351,12 +351,16 @@ function template() {
   fi
 
   local temp_file="${output}.$$.$RANDOM"
-  if cat >"$temp_file" <<<"$content" && mv -f "$temp_file" "$output"; then
-    copy_perms "$input" "$output"
+  if printf '%s' "$content" >"$temp_file"; then
+    if mv -f "$temp_file" "$output"; then
+      copy_perms "$input" "$output"
+      return
+    fi
+    debug "Failed to rename '$temp_file' to '$output'"
   else
     echo "Error: failed to create template output '$output'"
-    rm -f "$temp_file"
   fi
+  rm -f "$temp_file"
 }
 
 function template_default() {
