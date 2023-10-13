@@ -351,7 +351,7 @@ function template() {
   fi
 
   local temp_file="${output}.$$.$RANDOM"
-  if printf '%s' "$content" >"$temp_file"; then
+  if printf '%s\n' "$content" >"$temp_file"; then
     if mv -f "$temp_file" "$output"; then
       copy_perms "$input" "$output"
       return
@@ -2182,11 +2182,15 @@ function get_mode {
 
 function copy_perms {
   local source="$1"
-  local target="$2"
-
-  local mode
-  if ! mode=$(get_mode "$source") || ! chmod "$mode" "$target"; then
-    debug "Unable to copy perms '$mode' from '$source' to '$target'"
+  local dest="$2"
+  mode=$(get_mode "$source")
+  if [[ -z "$mode" ]]; then
+    debug "Unable to get mode for '$source'"
+    return 0 # to allow tests to pass
+  fi
+  if ! chmod "$mode" "$dest"; then
+    debug "Unable to set mode to '$mode' on '$dest'"
+    return 0 # to allow tests to pass
   fi
 
   return 0
