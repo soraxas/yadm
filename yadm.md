@@ -60,12 +60,14 @@
               The config command is not passed directly through.  Instead  use
               the gitconfig command (see below).
 
-       alt    Create  symbolic  links  and  process  templates for any managed
-              files matching the naming rules described in the ALTERNATES  and
-              TEMPLATES  sections.  It is usually unnecessary to run this com‐
-              mand, as yadm automatically  processes  alternates  by  default.
-              This  automatic behavior can be disabled by setting the configu‐
-              ration yadm.auto-alt to "false".
+       alt    Create symbolic links and  process  templates  for  any  managed
+              files  matching the naming rules described in the ALTERNATES and
+              TEMPLATES sections. It is usually unnecessary to run  this  com‐
+              mand,  as  yadm  automatically  processes alternates by default.
+              This automatic behavior can be disabled by setting the  configu‐
+              ration  yadm.auto-alt  to  "false".   The resulting file's write
+              permission can be controlled  with  the  yadm.template-read-only
+              configuration.
 
        bootstrap
               Execute $HOME/.config/yadm/bootstrap if it exists.
