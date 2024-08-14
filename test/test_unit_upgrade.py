@@ -1,4 +1,5 @@
 """Unit tests: upgrade"""
+
 import pytest
 
 

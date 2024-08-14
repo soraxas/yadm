@@ -1,4 +1,5 @@
 """Unit tests: choose_template_cmd"""
+
 import pytest
 
 

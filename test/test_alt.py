@@ -1,4 +1,5 @@
 """Test alt"""
+
 import os
 import string
 
@@ -291,6 +292,7 @@ def test_ensure_alt_path(runner, paths, style):
     assert run.err == ""
     assert run.out == ""
     assert paths.work.join(filename).read().strip() == "test-data"
+
 
 @pytest.mark.usefixtures("ds1_repo_copy")
 @pytest.mark.parametrize("readonly", [None, "true", "false"])
