@@ -432,20 +432,23 @@ function replace_vars() {
 }
 function condition_helper(label, value) {
   gsub(/[\\.^$(){}\[\]|*+?]/, "\\\\&", value)
-  return sprintf("yadm\\.%s" blank "*==" blank "*\"%s\"", label, value)
+  return sprintf("%s" blank "*==" blank "*\"%s\"", label, value)
 }
 function conditions() {
   pattern = ifs blank "+("
+  for (label in ENVIRON) {
+    pattern = sprintf("%s%s|", pattern, condition_helper("env\\." label, ENVIRON[label]));
+  }
   for (label in c) {
     if (label != "class") {
       value = c[label]
-      pattern = sprintf("%s%s|", pattern, condition_helper(label, value));
+      pattern = sprintf("%s%s|", pattern, condition_helper("yadm\\." label, value));
     }
   }
   split(classes, cls_array, "\n")
   for (idx in cls_array) {
     value = cls_array[idx]
-    pattern = sprintf("%s%s|", pattern, condition_helper("class", value));
+    pattern = sprintf("%s%s|", pattern, condition_helper("yadm\\." "class", value));
   }
   sub(/\|$/, ")" blank "*%}$", pattern)
   return pattern
