@@ -434,6 +434,7 @@ def test_ensure_alt_path(runner, paths, style):
     assert run.out == ""
     assert paths.work.join(filename).read().strip() == "test-data"
 
+
 @pytest.mark.usefixtures("ds1_repo_copy")
 @pytest.mark.parametrize("readonly", [None, "true", "false"])
 def test_template_readonly(runner, yadm_cmd, paths, tst_sys, readonly):
