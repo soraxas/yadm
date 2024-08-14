@@ -421,6 +421,35 @@ BEGIN {
         if (op == "==") { skip[++level] = lhs != rhs }
         else { skip[++level] = lhs == rhs }
       }
+      else if ($0 ~ "^[ \t]*\\{%[ \t]*elif[ \t]+" VARIABLE "[ \t]*[!=]=[ \t]*\".*\"[ \t]*%\\}$") {
+        if (level == 0 || skip[level] < 0) { error("elif without matching if") }
+        if (!skip[level - 1]) {
+          if (skip[level] == 0) {
+            skip[level] = -1
+          } else {
+            match($0, VARIABLE)
+            lhs = substr($0, RSTART, RLENGTH)
+            match($0, /[!=]=/)
+            op = substr($0, RSTART, RLENGTH)
+            match($0, /".*"/)
+            rhs = tolower(replace_vars(substr($0, RSTART + 1, RLENGTH - 2)))
+
+            if (lhs == "yadm.class") {
+              lhs = "not" rhs
+              split(classes, cls_array, "\n")
+              for (idx in cls_array) {
+                if (rhs == tolower(cls_array[idx])) { lhs = rhs; break }
+              }
+            }
+            else {
+              lhs = tolower(replace_vars("{{" lhs "}}"))
+            }
+
+            if (op == "==") { skip[level] = lhs != rhs }
+            else { skip[level] = lhs == rhs }
+          }
+        }
+      }
       else if (/^[ \t]*\{%[ \t]*else[ \t]*%\}$/) {
         if (level == 0 || skip[level] < 0) { error("else without matching if") }
         skip[level] = skip[level] ? skip[level - 1] : -1
