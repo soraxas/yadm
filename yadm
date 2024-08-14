@@ -380,28 +380,36 @@ BEGIN {
   c["distro"]        = distro
   c["distro_family"] = distro_family
   c["source"]        = source
-  ifs                = "^{%" blank "*if"
+  ifs                = "^{%" blank "*if" blank ".*" blank "*%}$"
+  elif               = "^{%" blank "*elif" blank ".*" blank "*%}$"
   els                = "^{%" blank "*else" blank "*%}$"
   end                = "^{%" blank "*endif" blank "*%}$"
-  skp                = "^{%" blank "*(if|else|endif)"
-  vld                = conditions()
+  skp                = "^{%" blank "*(if|elif|else|endif)"
+  vld                = "^{%" blank "*(if|elif)" blank conditions()
   inc_start          = "^{%" blank "*include" blank "+\"?"
   inc_end            = "\"?" blank "*%}$"
   inc                = inc_start ".+" inc_end
   prt                = 1
   err                = 0
+  condition_block    = 0
 }
 END { exit err }
 { replace_vars() } # variable replacements
-$0 ~ vld, $0 ~ end {
-  if ($0 ~ vld || $0 ~ end) prt=1;
-  if ($0 ~ els) prt=0;
-  if ($0 ~ skp) next;
-}
-($0 ~ ifs && $0 !~ vld), $0 ~ end {
-  if ($0 ~ ifs && $0 !~ vld) prt=0;
-  if ($0 ~ els || $0 ~ end) prt=1;
-  if ($0 ~ skp) next;
+# Handle lines within conditional blocks
+$0 ~ ifs, $0 ~ end {
+  if ($0 ~ ifs) prt = 0                     # off by default; will be turned on if a condition is met
+  if ($0 ~ ifs || $0 ~ elif || $0 ~ els) {  # switch to new block
+    prt = (condition_block > 0) ? 0 : prt   # Only affect printing if already inside a conditional block
+  }
+  if ($0 ~ vld || (condition_block == 0 && $0 ~ els)) {  # turn on `else` if not already in a conditional block
+    prt = 1
+    condition_block = 1  # Enter a conditional block
+  }
+  if ($0 ~ end) {
+    prt = 1
+    condition_block = 0  # Exit a conditional block
+  }
+  if ($0 ~ skp) next  # Skip lines with control keywords
 }
 { if (!prt) next }
 $0 ~ inc {
@@ -435,7 +443,7 @@ function condition_helper(label, value) {
   return sprintf("%s" blank "*==" blank "*\"%s\"", label, value)
 }
 function conditions() {
-  pattern = ifs blank "+("
+  pattern = "("
   for (label in ENVIRON) {
     pattern = sprintf("%s%s|", pattern, condition_helper("env\\." label, ENVIRON[label]));
   }
