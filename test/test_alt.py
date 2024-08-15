@@ -296,7 +296,7 @@ def test_ensure_alt_path(runner, paths, style):
 
 @pytest.mark.usefixtures("ds1_repo_copy")
 @pytest.mark.parametrize("readonly", [None, "true", "false"])
-def test_template_readonly(runner, yadm_cmd, paths, tst_sys, readonly):
+def test_template_readonly(runner, yadm_cmd, paths, readonly):
     """Remove write permission for template result file.
 
     If the `yadm.template-read-only` configuration is not set to false,
