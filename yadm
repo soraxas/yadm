@@ -332,29 +332,38 @@ function template() {
     return
   fi
 
-  if [ -r "$output" ] && [ "$content" = "$(<"$output")" ]; then
-    debug "Template output '$output' is unchanged"
-    return
+  local echo_or_debug=debug
+  [ -n "$loud" ] && echo_or_debug="echo"
+
+  if [[ -r "$output" ]]; then
+    local old_content
+    old_content=$(< "$output")
+
+    if [[ "$old_content" == "$content" ]]; then
+      "$echo_or_debug" "Not rewriting file as contents have not changed: $output"
+      return 0
+    fi
+
+    # if the output files already exists as read-only, change it to be writable.
+    # there are some environments in which a read-only file will prevent the move
+    # from being successful.
+
+    if [[ ! -w "$output" ]]; then
+      if ! chmod u+w "$output"; then
+        debug "Unable to make '$output' writeable"
+      fi
+    fi
   fi
 
-  # If the output file already exists as read-only, change it to be writable.
-  # There are some environments in which a read-only file will prevent the move
-  # from being successful.
-  if [ ! -w "$output" ] && [ -e "$output" ]; then
-    chmod u+w "$output"
-  fi
-
-  if [ -n "$loud" ]; then
-    echo "Creating $output from template $input"
-  else
-    debug "Creating $output from template $input"
-  fi
-
+  "$echo_or_debug" "Creating $output from template $input"
   local temp_file="${output}.$$.$RANDOM"
   if printf '%s\n' "$content" >"$temp_file"; then
     if mv -f "$temp_file" "$output"; then
       copy_perms "$input" "$output"
-      return
+      if [ "$template_output_ro" -eq 1 ] && ! chmod a-w "$output"; then
+        debug "Unable to remove writable-bit for template output '$output'"
+      fi
+      return 0
     fi
     debug "Failed to rename '$temp_file' to '$output'"
   else
@@ -560,7 +569,7 @@ function template_esh() {
   local input="$1"
 
   YADM_CLASSES="$(join_string $'\n' "${local_classes[@]}")" \
-    "$ESH_PROGRAM" -o "$temp_file" "$input" \
+    "$ESH_PROGRAM" "$input" \
     YADM_CLASS="$local_class"   \
     YADM_ARCH="$local_arch"     \
     YADM_OS="$local_system"     \
@@ -569,25 +578,6 @@ function template_esh() {
     YADM_DISTRO="$local_distro" \
     YADM_DISTRO_FAMILY="$local_distro_family" \
     YADM_SOURCE="$input"
-
-  move_file "$input" "$output" "$temp_file"
-}
-
-function move_file() {
-  local input=$1
-  local output=$2
-  local temp_file=$3
-
-  [ ! -f "$temp_file" ] && return
-
-  # if the output files already exists as read-only, change it to be writable.
-  # there are some environments in which a read-only file will prevent the move
-  # from being successful.
-  [[ -e "$output" && ! -w "$output" ]] && chmod u+w "$output"
-
-  mv -f "$temp_file" "$output"
-  copy_perms "$input" "$output"
-  [ "$(config --bool yadm.template-read-only)" != "false" ] && chmod a-w "$output"
 }
 
 # ****** yadm Commands ******
@@ -615,6 +605,10 @@ function alt() {
   # decide if a copy should be done instead of a symbolic link
   local do_copy=0
   [ "$(config --bool yadm.alt-copy)" == "true" ] && do_copy=1
+
+  # decide if a template output should be readonly
+  local template_output_ro=0
+  [ "$(config --bool yadm.template-read-only)" != "false" ] && template_output_ro=1
 
   cd_work "Alternates" || return
 
