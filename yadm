@@ -583,7 +583,7 @@ function move_file() {
   if printf '%s\n' "$content" >"$temp_file"; then
     if mv -f "$temp_file" "$output"; then
       copy_perms "$input" "$output"
-      if [ "$template_output_ro" -eq 1 ] && ! chmod a-w "$output"; then
+      if [ "$template_output_ro" == "true" ] && ! chmod a-w "$output"; then
         debug "Unable to remove writable-bit for template output '$output'"
       fi
       return 0
@@ -623,8 +623,8 @@ function alt() {
   [ "$(config --bool yadm.alt-copy)" == "true" ] && do_copy=1
 
   # decide if a template output should be readonly
-  local template_output_ro=0
-  [ "$(config --bool yadm.template-read-only)" != "false" ] && template_output_ro=1
+  local template_output_ro=
+  [ "$(config --bool yadm.template-read-only)" != "false" ] && template_output_ro=true
 
   cd_work "Alternates" || return
 
