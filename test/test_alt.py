@@ -1,4 +1,5 @@
 """Test alt"""
+
 import os
 import string
 
@@ -292,9 +293,10 @@ def test_ensure_alt_path(runner, paths, style):
     assert run.out == ""
     assert paths.work.join(filename).read().strip() == "test-data"
 
+
 @pytest.mark.usefixtures("ds1_repo_copy")
 @pytest.mark.parametrize("readonly", [None, "true", "false"])
-def test_template_readonly(runner, yadm_cmd, paths, tst_sys, readonly):
+def test_template_readonly(runner, yadm_cmd, paths, readonly):
     """Remove write permission for template result file.
 
     If the `yadm.template-read-only` configuration is not set to false,
@@ -304,8 +306,8 @@ def test_template_readonly(runner, yadm_cmd, paths, tst_sys, readonly):
     if readonly:
         runner(yadm_cmd("config", "yadm.template-read-only", readonly))
 
-    utils.create_alt_files(paths, f"##template.default")
-    run = runner(yadm_cmd("alt"))
+    utils.create_alt_files(paths, "##template.default")
+    runner(yadm_cmd("alt"))
 
     for stale_path in [utils.ALT_FILE1, utils.ALT_FILE2]:
         write_perm_mask = os.stat(paths.work.join(stale_path)).st_mode & 0o222

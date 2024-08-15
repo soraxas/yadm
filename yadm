@@ -555,12 +555,15 @@ function move_file() {
     return 1
   fi
 
+  local echo_or_debug=debug
+  [ -n "$loud" ] && echo_or_debug="echo"
+
   if [[ -r "$output" ]]; then
     local old_content
     old_content=$(< "$output")
 
     if [[ "$old_content" == "$content" ]]; then
-      debug "Not rewriting file as contents have not changed: $output"
+      "$echo_or_debug" "Not rewriting file as contents have not changed: $output"
       return 0
     fi
 
@@ -575,23 +578,20 @@ function move_file() {
     fi
   fi
 
-  if [ -n "$loud" ]; then
-    echo "Creating $output from template $input"
-  else
-    debug "Creating $output from template $input"
-  fi
-
+  "$echo_or_debug" "Creating $output from template $input"
   local temp_file="${output}.$$.$RANDOM"
   if printf '%s\n' "$content" >"$temp_file"; then
     if mv -f "$temp_file" "$output"; then
       copy_perms "$input" "$output"
-      return
+      if [ "$template_output_ro" == "true" ] && ! chmod a-w "$output"; then
+        debug "Unable to remove writable-bit for template output '$output'"
+      fi
+      return 0
     fi
     debug "Failed to rename '$temp_file' to '$output'"
   else
     debug "Failed to create '$temp_file' to generate '$output'"
   fi
-  [ "$(config --bool yadm.template-read-only)" != "false" ] && chmod a-w "$output"
   rm -f "$temp_file" &>/dev/null
   return 1
 }
@@ -621,6 +621,10 @@ function alt() {
   # decide if a copy should be done instead of a symbolic link
   local do_copy=0
   [ "$(config --bool yadm.alt-copy)" == "true" ] && do_copy=1
+
+  # decide if a template output should be readonly
+  local template_output_ro=
+  [ "$(config --bool yadm.template-read-only)" != "false" ] && template_output_ro=true
 
   cd_work "Alternates" || return
 
